@@ -31,7 +31,9 @@ public class Compilador {
 			for(int j=0;j<linea.length;j++){
 				String identificador = comprobar(linea[j]);
 				asd.add(identificador);
-				if(comprobarTablaSimbolos(identificador) && !identificador.isEmpty()){
+				int x1 = (int)identificador.charAt(0);
+				int x2 = (int)identificador.charAt(identificador.length()-1);
+				if(comprobarTablaSimbolos(identificador) && !identificador.isEmpty() && x1 != 39 && x2 != 39){
 					agregarIdentificador(identificador);
 				}else{
 				//	System.out.println(identificador+" se encontro en la tabla de simbolos");
@@ -41,6 +43,10 @@ public class Compilador {
 		
 		Sintactico s = new Sintactico(asd,tablaIdentificadores);
 		s.programa();
+		System.out.println("\n");
+		for(int i=0;i<s.getEnsamblador().size();i++){
+			System.out.println(s.getEnsamblador().get(i).toString());
+		}
 //		System.out.println("\nTabla de simbolos");
 //			for(String au : tablaIdentificadores){
 //				System.out.println(au);
@@ -53,9 +59,12 @@ public class Compilador {
 		String aux2 = "";
 		while(i < aux.length()){
 			int x = (int) aux.charAt(i);
-			if((x >= 97 && x <= 122) || (x >= 65 && x <= 90)){
+			if((x >= 97 && x <= 122) || (x >= 65 && x <= 90) || x == 39){
 				aux2+=aux.charAt(i);
 			}else{
+				if(x == 38 || x == 124){
+					aux2+=aux.charAt(i);
+				}
 				if(((x >= 48 && x <= 57) || (x == 95))){
 					int d=0;
 					if(x == 95)
@@ -97,6 +106,11 @@ public class Compilador {
 							return "<";
 						}
 						case 43:{
+							if((i+1) < aux.length()){
+								int z = aux.charAt(i+1);
+								if(z == 43)
+									return "++";
+							}
 							return "+";
 						}
 						case 45:{
@@ -122,6 +136,7 @@ public class Compilador {
 			}
 			if(x == 36)
 				aux2+=aux.charAt(i);
+			
 			i++;
 		}
 		return aux2;

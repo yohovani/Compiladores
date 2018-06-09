@@ -1,0 +1,17 @@
+sabit tam const := 1 : constante := 1 : cñon := 2 ;
+tam function [ ]
+const := 1 - 1 ;
+end function
+ikiqat var1 : var2 ;
+call function
+pera tam var3 := 0 var3 < 3 var3 ++
+si 2 > 3 llavors 
+var1 := 1 * 1 ;
+no
+var2 := 1 / 1 ;
+end pera
+si 2 > 3 llavors 
+var2 := 1 - 1 ;
+no
+var2 := 1 / 1 ;
+$

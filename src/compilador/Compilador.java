@@ -6,6 +6,8 @@
 package compilador;
 
 import static compilador.abrir.abrirArchivo;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 
 /**
@@ -43,15 +45,85 @@ public class Compilador {
 		
 		Sintactico s = new Sintactico(asd,tablaIdentificadores);
 		s.programa();
-		System.out.println("\n");
-		for(int i=0;i<s.getEnsamblador().size();i++){
-			System.out.println(s.getEnsamblador().get(i).toString());
-		}
-//		System.out.println("\nTabla de simbolos");
-//			for(String au : tablaIdentificadores){
-//				System.out.println(au);
+		
+		System.out.println("Codigo Ensamblador\n");
+//		for(int i=0;i<s.getEnsamblador().size();i++){
+//			if(s.getEnsamblador().get(i).getFuncion() != null){
+//				System.out.println(s.getEnsamblador().get(i).toString());
 //			}
-//			int y=0;
+//			//System.out.println(s.getEnsamblador().get(i).toString());
+//		}
+	
+	//	ArrayList<Ensamblador> as = s.getEnsamblador();
+	String codigo = ".model tiny\n.stack\n.data\n";
+	ArrayList<Ensamblador> auxEns = new ArrayList();
+		for(int i=0;i<s.getEnsamblador().size();i++){
+			if(s.getEnsamblador().get(i).getInstrucciones().size() == 0 && s.getEnsamblador().get(i).getOperacion() == null && s.getEnsamblador().get(i).getFor() == null
+				&& s.getEnsamblador().get(i).getFuncion() == null && s.getEnsamblador().get(i).getIf() == null  && s.getEnsamblador().get(i).getLlamada() == null){
+				codigo+=s.getEnsamblador().get(i).toString()+"\n";
+				auxEns.add(s.getEnsamblador().get(i));
+		//		as.remove(i);
+			}
+		}
+		codigo+=".code\n.startup\n";
+		
+		for(int i=0;i<s.getEnsamblador().size();i++){
+			if(s.getEnsamblador().get(i).getFuncion() == null){
+				if(!auxEns.contains(s.getEnsamblador().get(i))){
+					codigo+=s.getEnsamblador().get(i).toString()+"\n";
+					auxEns.add(s.getEnsamblador().get(i));
+				}
+		//		as.remove(i);
+			}
+		}
+		codigo+=".exit\n";
+		for(int i=0;i<s.getEnsamblador().size();i++){
+			if(s.getEnsamblador().get(i).getFuncion() != null){
+				if(!auxEns.contains(s.getEnsamblador().get(i))){
+					codigo+=s.getEnsamblador().get(i).toString()+"\n";
+					auxEns.add(s.getEnsamblador().get(i));
+				}
+		//		as.remove(i);
+			}
+		}
+		codigo+=".end\n";
+		System.out.println(codigo);
+		
+		FileWriter fichero = null;
+        PrintWriter pw = null;
+        try {
+            fichero = new FileWriter("codigo.asm");
+            pw = new PrintWriter(fichero);
+
+                pw.println(codigo);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+           try {
+           // Nuevamente aprovechamos el finally para 
+           // asegurarnos que se cierra el fichero.
+           if (null != fichero)
+              fichero.close();
+           } catch (Exception e2) {
+              e2.printStackTrace();
+           }
+        }
+		
+	//	s.setEnsamblador(as);
+//		System.out.println(".code \n.startup");
+//		for(int i=0;i<s.getEnsamblador().size();i++){
+//			if(s.getEnsamblador().get(i).getFuncion() == null){
+//				System.out.println(s.getEnsamblador().get(i).toString());
+//				s.getEnsamblador().remove(i);
+//			}
+//		}
+//		System.out.println(".exit");
+//		for(int i=0;i<s.getEnsamblador().size();i++){
+//			System.out.println(s.getEnsamblador().get(i).toString());
+//		}
+//		System.out.println(".end");
+
 	}
 	
 	public static String comprobar(String aux){

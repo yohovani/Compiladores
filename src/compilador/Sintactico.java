@@ -18,11 +18,11 @@ public class Sintactico {
 	private ArrayList<String> tablaIdentificadores;
 	private final ArrayList<String> tablaSimbolos;
 	private String x1,x2;
-	private int contador;
+	private int contador,sad;
 	private boolean auxV;
 	private ArrayList<DatosCompilador> datos;
-	private ArrayList<Ensamblador> ensamblador;
-	private String ens;
+	private ArrayList<Ensamblador> ensamblador,auxEnsamblador;
+	private String funcion;
 
 	public ArrayList<Ensamblador> getEnsamblador() {
 		return ensamblador;
@@ -177,13 +177,17 @@ public class Sintactico {
 		}
 	}
 	public void variableFuncion(){
+		this.ensamblador.add(new Ensamblador());
 		token = Lexico();
 		tipo();
 		this.tipo = token;
 		this.auxDatos = null;
 		this.auxDatos = new DatosCompilador(false,false,token,"");
 		token = Lexico();
+		this.funcion = this.cadena.get(contador-1);
+		
 		if(token.equals("IDENT")){
+			this.sad = 1;
 			auxVF();
 //			token = Lexico();
 			if(token.equals(";")){
@@ -201,6 +205,7 @@ public class Sintactico {
 	public void auxVF(){
 		auxFuncion();
 		if(this.auxV){
+			this.sad = 0;
 			token = Lexico();
 			int au = ensamblador.size();
 			this.ensamblador.add(new Ensamblador());
@@ -223,7 +228,8 @@ public class Sintactico {
 	
 	public void auxFuncion(){
 		token = Lexico();
-
+		this.ensamblador.get(ensamblador.size()-1).setFuncion("proc [near]\n");
+		this.auxEnsamblador = new ArrayList();
 		if(token.equals("[")){
 			DatosCompilador aa = new DatosCompilador();
 			aa.setConstante(auxDatos.isConstante());
@@ -240,8 +246,10 @@ public class Sintactico {
 				if(token.equals("end")){
 					token = Lexico();
 					this.auxDatos = aa;
+					
 					if(token.equals("IDENT")){
-						
+						this.ensamblador.get(ensamblador.size()-1).setInstrucciones(auxEnsamblador);
+						auxEnsamblador = null;
 						this.auxV=true;
 					}else{
 						System.out.println("Error se esperaba un identificador de la funcion");
@@ -275,7 +283,10 @@ public class Sintactico {
 				break;
 			}
 			case "pera":{
-				
+				this.ensamblador.add(new Ensamblador());
+				Random r = new Random();
+				this.ensamblador.get((ensamblador.size()-1)).setFor("for"+r.nextInt(100));
+				sad = 0;
 				auxDatos = new DatosCompilador();
 				auxDatos.setConstante(false);
 				auxDatos.setFuncion(false);
@@ -284,6 +295,7 @@ public class Sintactico {
 				token = Lexico();
 				
 				if(token.equals("IDENT")){
+					
 					this.auxDatos = null;
 					token = Lexico();
 					if(token.equals(":=")){
@@ -292,12 +304,17 @@ public class Sintactico {
 							condicion();
 							auxIncremento();
 							token = Lexico();
+							this.auxEnsamblador = new ArrayList();
+							
 							preposicion();
 							token = Lexico();
 							if(token.equals("end")){
+								if(auxEnsamblador != null)
+									this.ensamblador.get((ensamblador.size()-1)).setInstrucciones(auxEnsamblador);
+								
 								token = Lexico();
 								if(token.equals("pera")){
-								
+								this.auxEnsamblador = null;
 								}else{
 									System.out.println("Error se esperaba pera");
 									System.exit(0);
@@ -379,18 +396,41 @@ public class Sintactico {
 				break;
 			}
 			case "si":{
-				this.ensamblador.add(new Ensamblador());
 				Random r = new Random();
-				this.ensamblador.get((ensamblador.size()-1)).setIf("if"+r.nextInt(100));
+				if(this.auxEnsamblador == null){
+					this.ensamblador.add(new Ensamblador());
+					this.ensamblador.get((ensamblador.size()-1)).setIf("if"+r.nextInt(100));
+				}else{
+					if(this.auxEnsamblador.size() > 0)
+						this.auxEnsamblador.get((auxEnsamblador.size()-1)).setIf("if"+r.nextInt(100));
+					else{
+						this.auxEnsamblador.add(new Ensamblador());
+						this.auxEnsamblador.get((auxEnsamblador.size()-1)).setIf("if"+r.nextInt(100));
+					}
+					
+				}
+
 				condicion();
 				//token = Lexico();
 				if(token.equals("llavors")){
 					token = Lexico();
+					this.auxEnsamblador = new ArrayList();
 					preposicion();
 					auxIf();
 				}else{
 					System.out.println("Error se esperaba llavors");
 					System.exit(0);
+				}
+				break;
+			}
+			case "call":{
+				this.ensamblador.add(new Ensamblador());
+				this.ensamblador.get(ensamblador.size()-1).setLlamada("call");
+				token = Lexico();
+				if(token.equals("IDENT")){
+					
+				}else{
+					System.out.println("Se esperaba un identificador");
 				}
 				break;
 			}
@@ -400,16 +440,17 @@ public class Sintactico {
 					token = Lexico();
 					if(token.equals(":=")){
 						token = Lexico();
-						if(this.ensamblador.get(ensamblador.size()-1).getIf() != null){
-							this.ensamblador.get(ensamblador.size()-1).getInstrucciones().add(new Ensamblador());
-							int x = ensamblador.size()-1;
-							int y = ensamblador.get(x).getInstrucciones().size()-1;
-							this.ensamblador.get(x).getInstrucciones().get(y).setOtro(aux);
+						if(auxEnsamblador != null){
+							if(auxEnsamblador.size() > 0)
+								auxEnsamblador.get(auxEnsamblador.size()-1).setOtro(aux);
+							else{
+								auxEnsamblador.add(new Ensamblador());
+								auxEnsamblador.get(auxEnsamblador.size()-1).setOtro(aux);
+							}
 						}else{
 							ensamblador.add(new Ensamblador());
 							ensamblador.get(ensamblador.size()-1).setOtro(aux);
 						}
-						
 						auxPreposicion();
 						token= Lexico();
 						if(token.equals(";")){
@@ -486,27 +527,17 @@ public class Sintactico {
 	public void auxIf(){
 		token = Lexico();
 		if(!token.equals("$") || !token.equals("end") || !token.equals("pauza"))
-			switch(token){
-				case "sino":{
-					if(this.ensamblador.get(ensamblador.size()-1).getIf() != null){
-						int x = this.ensamblador.get(ensamblador.size()-1).getInstrucciones().size();
-						this.ensamblador.get(ensamblador.size()-1).setElseIf(x);
-						this.ensamblador.get(ensamblador.size()-1).getInstrucciones().add(new Ensamblador());
-						Random r = new Random();
-						this.ensamblador.get(ensamblador.size()-1).getInstrucciones().get(x).setIf("if"+r.nextInt(100));
-					}
-					token = Lexico();
-					preposicion();
-					auxIf();
-					break;
-				}
+			switch(token){	
 				case "no":{
-					if(this.ensamblador.get(ensamblador.size()-1).getIf() != null){
-						int x = this.ensamblador.get(ensamblador.size()-1).getInstrucciones().size();
-						this.ensamblador.get(ensamblador.size()-1).setElse(x);
+					if(auxEnsamblador != null){
+						ensamblador.get(ensamblador.size()-1).setElse(auxEnsamblador.size());
+						this.auxEnsamblador.add(new Ensamblador());
 					}
 					token = Lexico();
+					
 					preposicion();
+					this.ensamblador.get(ensamblador.size()-1).setInstrucciones(auxEnsamblador);
+					auxEnsamblador = null;
 					break;
 				}
 			}
@@ -562,11 +593,10 @@ public class Sintactico {
 		
 		switch(token){
 			case "*":{
-				if(this.ensamblador.get(ensamblador.size()-1).getIf() == null)
+				if(this.auxEnsamblador != null){
+					auxEnsamblador.get(auxEnsamblador.size()-1).setOperacion("mul");
+				}else{
 					ensamblador.get(ensamblador.size()-1).setOperacion("mul");
-				else{
-					this.ensamblador.get(ensamblador.size()-1).getInstrucciones().
-							get(ensamblador.get(ensamblador.size()-1).getInstrucciones().size()-1).setOperacion("mul");
 				}
 				token = Lexico();
 				factor();
@@ -579,11 +609,10 @@ public class Sintactico {
 				break;
 			}
 			case "+":{
-				if(this.ensamblador.get(ensamblador.size()-1).getIf() == null)
+				if(this.auxEnsamblador != null){
+					auxEnsamblador.get(auxEnsamblador.size()-1).setOperacion("add");
+				}else{
 					ensamblador.get(ensamblador.size()-1).setOperacion("add");
-				else{
-					this.ensamblador.get(ensamblador.size()-1).getInstrucciones().
-							get(ensamblador.get(ensamblador.size()-1).getInstrucciones().size()-1).setOperacion("add");
 				}
 				token = Lexico();
 				factor();
@@ -596,11 +625,10 @@ public class Sintactico {
 				break;
 			}
 			case "-":{
-				if(this.ensamblador.get(ensamblador.size()-1).getIf() == null)
+				if(this.auxEnsamblador != null){
+					auxEnsamblador.get(auxEnsamblador.size()-1).setOperacion("sub");
+				}else{
 					ensamblador.get(ensamblador.size()-1).setOperacion("sub");
-				else{
-					this.ensamblador.get(ensamblador.size()-1).getInstrucciones().
-							get(ensamblador.get(ensamblador.size()-1).getInstrucciones().size()-1).setOperacion("sub");
 				}
 				
 				token = Lexico();
@@ -614,11 +642,10 @@ public class Sintactico {
 				break;
 			}
 			case "/":{
-				if(this.ensamblador.get(ensamblador.size()-1).getIf() == null)
+				if(this.auxEnsamblador != null){
+					auxEnsamblador.get(auxEnsamblador.size()-1).setOperacion("div");
+				}else{
 					ensamblador.get(ensamblador.size()-1).setOperacion("div");
-				else{
-					this.ensamblador.get(ensamblador.size()-1).getInstrucciones().
-							get(ensamblador.get(ensamblador.size()-1).getInstrucciones().size()-1).setOperacion("div");
 				}
 				token = Lexico();
 				factor();
@@ -662,14 +689,36 @@ public class Sintactico {
 	}
 	public void condicion(){
 		token = Lexico();
-		this.ensamblador.get((ensamblador.size()-1)).setCondicion(token+" ");
-		expresion();
+		if(this.auxEnsamblador == null)
+			this.ensamblador.get((ensamblador.size()-1)).setCondicion(token+" ");
+		else{
+			if(this.auxEnsamblador.size() > 0){
+				this.auxEnsamblador.get((auxEnsamblador.size()-1)).setCondicion(token+" ");
+			}else{
+				this.auxEnsamblador.add(new Ensamblador());
+				this.auxEnsamblador.get((auxEnsamblador.size()-1)).setCondicion(token+" ");
+			}
+
+		}
+		if(token.equals("IDENT") || token.equals("VALOR")){
+		//expresion();
 		token = Lexico();
-		this.ensamblador.get((ensamblador.size()-1)).setCondicion(this.ensamblador.get((ensamblador.size()-1)).getCondicion()+token+" ");
+		if(this.auxEnsamblador == null)
+			this.ensamblador.get((ensamblador.size()-1)).setCondicion(this.ensamblador.get((ensamblador.size()-1)).getCondicion()+token+" ");
+		else{
+			if(this.auxEnsamblador.size() > 0){
+				this.auxEnsamblador.get((auxEnsamblador.size()-1)).setCondicion(this.ensamblador.get((ensamblador.size()-1)).getCondicion()+token+" ");
+			}else{
+				this.auxEnsamblador.add(new Ensamblador());
+				this.auxEnsamblador.get((auxEnsamblador.size()-1)).setCondicion(this.ensamblador.get((ensamblador.size()-1)).getCondicion()+token+" ");
+			}
+		}
 		auxCondicion();
 		token = Lexico();
-		expresion();
-		token = Lexico();
+		//expresion();
+		if(token.equals("IDENT") || token.equals("VALOR"))
+			token = Lexico();
+		}
 		auxCondicion2();
 	}
 	public void auxCondicion(){
@@ -720,7 +769,7 @@ public class Sintactico {
 	public void parametros(){
 		
 		if(token.equals("[")){
-			DatosCompilador aa = new DatosCompilador();
+		/*	DatosCompilador aa = new DatosCompilador();
 			aa.setConstante(false);
 			aa.setFuncion(false);
 			aa.setParametro(true);
@@ -732,19 +781,20 @@ public class Sintactico {
 			token = Lexico();
 			if(token.equals("IDENT")){
 				this.auxDatos = null;
-				auxParametros();
+				auxParametros();*/
+		token = Lexico();
 				if(token.equals("]")){
 
 				}else{
-					System.out.println("Se esperaba [");
+					System.out.println("Se esperaba ]");
 					System.exit(0);
 				}
-			}else{
+		/*	}else{
 				System.out.println("Se esperaba Identificador");
 				System.exit(0);
-			}
+			}*/
 		}else{
-			System.out.println("Se esperaba ]");
+			System.out.println("Se esperaba [");
 			System.exit(0);
 		}
 	}
@@ -835,31 +885,24 @@ public class Sintactico {
 						System.exit(0);
 					}
 				}
-				
-				int x = ensamblador.size()-1;
-				int y=0;
-				if(ensamblador.get(x).getInstrucciones().size()-1 >= 0)
-					y = ensamblador.get(x).getInstrucciones().size()-1;
-
-				if(this.ensamblador.get(x).getIf() == null){
-					if(this.ensamblador.get(ensamblador.size()-1).getValor() == null)
-						this.ensamblador.get(ensamblador.size()-1).setName(aux);
-					else{
-						this.ensamblador.get(ensamblador.size()-1).setName2(aux);
-					}
-				}else{
-					if(ensamblador.get(x).getInstrucciones().size() > 0)
-						if(this.ensamblador.get(x).getInstrucciones().get(y).getValor() == null)
-							this.ensamblador.get(x).getInstrucciones().get(y).setValor(aux);
-						else{
-							this.ensamblador.get(x).getInstrucciones().get(y).setName2(aux);
+				if(this.funcion != aux && sad != 1){
+					if(this.auxEnsamblador == null || 
+						(ensamblador.get(ensamblador.size()-1).getName() == null && ensamblador.get(ensamblador.size()-1).getFor() != null) || 
+						(ensamblador.get(ensamblador.size()-1).getName() == null && ensamblador.get(ensamblador.size()-1).getLlamada() != null) ||
+						(ensamblador.get(ensamblador.size()-1).getName() == null && ensamblador.get(ensamblador.size()-1).getIf() != null)){
+						if(this.ensamblador.get(ensamblador.size()-1).getName() == null){
+							this.ensamblador.get(ensamblador.size()-1).setName(aux);
+						}else{
+							this.ensamblador.get(ensamblador.size()-1).setName2(aux);
 						}
-					else{
-						ensamblador.get(x).getInstrucciones().add(new Ensamblador());
-						if(this.ensamblador.get(x).getInstrucciones().get(y).getValor() == null)
-							this.ensamblador.get(x).getInstrucciones().get(y).setValor(aux);
-						else{
-							this.ensamblador.get(x).getInstrucciones().get(y).setName2(aux);
+					}else{
+						if(auxEnsamblador.size() == 0){
+								auxEnsamblador.add(new Ensamblador());
+						}
+						if(this.auxEnsamblador.get(auxEnsamblador.size()-1).getName() == null){
+							this.auxEnsamblador.get(auxEnsamblador.size()-1).setName(aux);
+						}else{
+							this.auxEnsamblador.get(auxEnsamblador.size()-1).setName2(aux);
 						}
 					}
 				}
@@ -879,36 +922,69 @@ public class Sintactico {
 							x2 = comprobarTipo(aux);
 						}
 					}
-					if(this.ensamblador.size() > 0){
-						//this.ensamblador.get(x).getInstrucciones().get(y).setOtro(aux);
-						int x = ensamblador.size()-1;
-						int y=0;
-						if(ensamblador.get(x).getInstrucciones().size()-1 >= 0)
-							y = ensamblador.get(x).getInstrucciones().size()-1;
-	
-						if(this.ensamblador.get(x).getIf() == null){
-							if(this.ensamblador.get(ensamblador.size()-1).getValor() == null)
-								this.ensamblador.get(ensamblador.size()-1).setValor(aux);
-							else{
-								this.ensamblador.get(ensamblador.size()-1).setName2(aux);
-							}
+					
+					if(this.auxEnsamblador == null || (ensamblador.get(ensamblador.size()-1).getValor() == null && ensamblador.get(ensamblador.size()-1).getFor() != null) ||
+						(ensamblador.get(ensamblador.size()-1).getName() == null && ensamblador.get(ensamblador.size()-1).getIf() != null)){
+						if(this.ensamblador.get(ensamblador.size()-1).getValor() == null){
+							this.ensamblador.get(ensamblador.size()-1).setValor(aux);
 						}else{
-							if(ensamblador.get(x).getInstrucciones().size() > 0)
-								if(this.ensamblador.get(x).getInstrucciones().get(y).getValor() == null)
-									this.ensamblador.get(x).getInstrucciones().get(y).setValor(aux);
-								else{
-									this.ensamblador.get(x).getInstrucciones().get(y).setName2(aux);
-								}
-							else{
-								ensamblador.get(x).getInstrucciones().add(new Ensamblador());
-								if(this.ensamblador.get(x).getInstrucciones().get(y).getValor() == null)
-									this.ensamblador.get(x).getInstrucciones().get(y).setValor(aux);
-								else{
-									this.ensamblador.get(x).getInstrucciones().get(y).setName2(aux);
-								}
+							if(this.ensamblador.get(ensamblador.size()-1).getOperacion() != null){
+								this.ensamblador.get(ensamblador.size()-1).setName2(aux);
+							}else{
+								this.ensamblador.get(ensamblador.size()-1).setOtro(aux);								
 							}
+
+						}
+					}else{
+						if(auxEnsamblador.size() == 0){
+							auxEnsamblador.add(new Ensamblador());
+						}
+						if(this.auxEnsamblador.get(auxEnsamblador.size()-1).getValor() == null){
+							this.auxEnsamblador.get(auxEnsamblador.size()-1).setValor(aux);
+						}else{
+							if(this.auxEnsamblador.get(auxEnsamblador.size()-1).getOperacion() != null){
+								this.auxEnsamblador.get(auxEnsamblador.size()-1).setName2(aux);
+							}else{
+								this.auxEnsamblador.get(auxEnsamblador.size()-1).setOtro(aux);								
+							}
+							//this.auxEnsamblador.get(auxEnsamblador.size()-1).setOtro(aux);
 						}
 					}
+//					if(this.ensamblador.size() > 0){
+//						//this.ensamblador.get(x).getInstrucciones().get(y).setOtro(aux);
+//						int x = ensamblador.size()-1;
+//						int y=0;
+//						if(ensamblador.get(x).getInstrucciones().size()-1 >= 0)
+//							y = ensamblador.get(x).getInstrucciones().size()-1;
+//	
+//						if(this.ensamblador.get(x).getIf() == null){
+//							if(this.ensamblador.get(ensamblador.size()-1).getValor() == null)
+//								this.ensamblador.get(ensamblador.size()-1).setValor(aux);
+//							else{
+//								this.ensamblador.get(ensamblador.size()-1).setName2(aux);
+//							}
+//						}else{
+//							if(ensamblador.get(x).getInstrucciones().size() > 0){
+//								if(this.ensamblador.get(x).getName() == null){
+//									this.ensamblador.get(x).setName(aux);
+//								}else{
+//									this.ensamblador.get(x).setName2(aux);
+//								}
+//								if(this.ensamblador.get(x).getInstrucciones().get(y).getValor() == null)
+//									this.ensamblador.get(x).getInstrucciones().get(y).setValor(aux);
+//								else{
+//									this.ensamblador.get(x).getInstrucciones().get(y).setName2(aux);
+//								}
+//							}else{
+//								ensamblador.get(x).getInstrucciones().add(new Ensamblador());
+//								if(this.ensamblador.get(x).getInstrucciones().get(y).getValor() == null)
+//									this.ensamblador.get(x).getInstrucciones().get(y).setValor(aux);
+//								else{
+//									this.ensamblador.get(x).getInstrucciones().get(y).setName2(aux);
+//								}
+//							}
+//						}
+//					}
 					return "VALOR";
 				}
 			}
@@ -964,4 +1040,9 @@ public class Sintactico {
 	}
 		return aux;
 	}
+
+	public void setEnsamblador(ArrayList<Ensamblador> ensamblador) {
+		this.ensamblador = ensamblador;
+	}
+	
 }
